@@ -11,11 +11,11 @@ namespace RedisSample2
     {
         static void Main(string[] args)
         {
-            ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost");
-            IDatabase db = redis.GetDatabase();
-            if (db.StringSet("testKey", "testValue"))
+            var redis = RedisStore.RedisCache;
+
+            if (redis.StringSet("testKey", "testValue"))
             {
-                var val = db.StringGet("testKey");
+                var val = redis.StringGet("testKey");
 
                 Console.WriteLine(val);
             }
