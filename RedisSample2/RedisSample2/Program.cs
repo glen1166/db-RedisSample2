@@ -13,55 +13,82 @@ namespace RedisSample2
         {
             var redis = RedisStore.RedisCache;
 
-            var hashKey = "hashKey";
-            HashEntry[] redisBookHash = {
-                new HashEntry("title", "Redis for .NET Developers"),
-                new HashEntry("year", 2016),
-                new HashEntry("author", "Taswar Bhatti")
-            };    
+            var listKey = "listKey";
 
-            redis.HashSet(hashKey, redisBookHash);
+            redis.KeyDelete(listKey, CommandFlags.FireAndForget);
 
-            if (redis.HashExists(hashKey, "year"))
+            redis.ListRightPush(listKey, "a");
+
+            var len = redis.ListLength(listKey);
+            Console.WriteLine(len); //output  is 1
+
+            redis.ListRightPush(listKey, "b");
+
+            Console.WriteLine(redis.ListLength(listKey)); //putput is 2
+
+            //lets clear it out
+            redis.KeyDelete(listKey, CommandFlags.FireAndForget);
+
+            redis.ListRightPush(listKey, "abcdefghijklmnopqrstuvwxyz".Select(x => (RedisValue)x.ToString()).ToArray());
+
+            Console.WriteLine(redis.ListLength(listKey)); //output is 26
+
+            Console.WriteLine(string.Concat(redis.ListRange(listKey))); //output is abcdefghijklmnopqrstuvwxyz
+
+            var lastFive = redis.ListRange(listKey, -5);
+
+            Console.WriteLine(string.Concat(lastFive)); //output vwxyz
+
+            var firstFive = redis.ListRange(listKey, 0, 4);
+
+            Console.WriteLine(string.Concat(firstFive)); //output abcde
+
+            redis.ListTrim(listKey, 0, 1);
+
+            Console.WriteLine(string.Concat(redis.ListRange(listKey))); //output ab
+
+            //lets clear it out
+            redis.KeyDelete(listKey, CommandFlags.FireAndForget);
+
+            redis.ListRightPush(listKey, "abcdefghijklmnopqrstuvwxyz".Select(x => (RedisValue)x.ToString()).ToArray());
+
+            var firstElement = redis.ListLeftPop(listKey);
+
+            Console.WriteLine(firstElement); //output a, list is now bcdefghijklmnopqrstuvwxyz
+
+            var lastElement = redis.ListRightPop(listKey);
+
+            Console.WriteLine(lastElement); //output z, list is now bcdefghijklmnopqrstuvwxy
+
+            redis.ListRemove(listKey, "c");
+
+            Console.WriteLine(string.Concat(redis.ListRange(listKey))); //output is bdefghijklmnopqrstuvwxy   
+
+            redis.ListSetByIndex(listKey, 1, "c");
+
+            Console.WriteLine(string.Concat(redis.ListRange(listKey))); //output is bcefghijklmnopqrstuvwxy   
+
+            var thirdItem = redis.ListGetByIndex(listKey, 3);
+
+            Console.WriteLine(thirdItem); //output f  
+
+            //lets clear it out
+            var destinationKey = "destinationList";
+            redis.KeyDelete(listKey, CommandFlags.FireAndForget);
+            redis.KeyDelete(destinationKey, CommandFlags.FireAndForget);
+
+            redis.ListRightPush(listKey, "abcdefghijklmnopqrstuvwxyz".Select(x => (RedisValue)x.ToString()).ToArray());
+
+            var listLength = redis.ListLength(listKey);
+
+            for (var i = 0; i < listLength; i++)
             {
-                var year = redis.HashGet(hashKey, "year"); //year is 2016
+                var val = redis.ListRightPopLeftPush(listKey, destinationKey);
+
+                Console.Write(val);    //output zyxwvutsrqponmlkjihgfedcba
             }
 
-            var allHash = redis.HashGetAll(hashKey);
-
-            //get all the items
-            foreach (var item in allHash)
-            {
-                //output 
-                //key: title, value: Redis for .NET Developers
-                //key: year, value: 2016
-                //key: author, value: Taswar Bhatti
-                Console.WriteLine(string.Format("key : {0}, value : {1}", item.Name, item.Value));
-            }
-
-            //get all the values
-            var values = redis.HashValues(hashKey);
-
-            foreach (var val in values)
-            {
-                Console.WriteLine(val); //result = Redis for .NET Developers, 2016, Taswar Bhatti
-            }
-
-            //get all the keys
-            var keys = redis.HashKeys(hashKey);
-
-            foreach (var k in keys)
-            {
-                Console.WriteLine(k); //result = title, year, author
-            }
-
-            var len = redis.HashLength(hashKey);  //result of len is 3
-
-            if (redis.HashExists(hashKey, "year"))
-            {
-                var year = redis.HashIncrement(hashKey, "year", 1); //year now becomes 2017
-                var year2 = redis.HashDecrement(hashKey, "year", 1.5); //year now becomes 2015.5
-            }
+            Console.ReadKey();
         }
     }
 }
