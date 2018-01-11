@@ -13,43 +13,54 @@ namespace RedisSample2
         {
             var redis = RedisStore.RedisCache;
 
-            var number = 101;
-            var intKey = "intKey";
-            if (redis.StringSet(intKey, number))
+            var hashKey = "hashKey";
+            HashEntry[] redisBookHash = {
+                new HashEntry("title", "Redis for .NET Developers"),
+                new HashEntry("year", 2016),
+                new HashEntry("author", "Taswar Bhatti")
+            };    
+
+            redis.HashSet(hashKey, redisBookHash);
+
+            if (redis.HashExists(hashKey, "year"))
             {
-                //redis incr command
-                var result = redis.StringIncrement(intKey); //after operation Our int number is now 102
-                Console.WriteLine(result);
+                var year = redis.HashGet(hashKey, "year"); //year is 2016
+            }
 
-                //incrby command
-                var newNumber = redis.StringIncrement(intKey, 100); // we now have incremented by 100, thus the new number is 202
-                Console.WriteLine(newNumber);
+            var allHash = redis.HashGetAll(hashKey);
 
-                redis.KeyDelete("zeroValueKey");
-                //by default redis stores a value of zero if no value is provided           
-                var zeroValue = (int)redis.StringGet("zeroValueKey");
-                Console.WriteLine(zeroValue);
+            //get all the items
+            foreach (var item in allHash)
+            {
+                //output 
+                //key: title, value: Redis for .NET Developers
+                //key: year, value: 2016
+                //key: author, value: Taswar Bhatti
+                Console.WriteLine(string.Format("key : {0}, value : {1}", item.Name, item.Value));
+            }
 
-                var someValue = (int)redis.StringIncrement("zeroValueKey"); //someValue is now 1 since it was incremented
-                Console.WriteLine(someValue);
+            //get all the values
+            var values = redis.HashValues(hashKey);
 
-                //decr command
-                redis.StringDecrement("zeroValueKey");
-                someValue = (int)redis.StringGet("zeroValueKey"); //now someValue is back to 0   
-                Console.WriteLine(someValue);
+            foreach (var val in values)
+            {
+                Console.WriteLine(val); //result = Redis for .NET Developers, 2016, Taswar Bhatti
+            }
 
-                //decrby command
-                someValue = (int)redis.StringDecrement("zeroValueKey", 99); // now someValue is -99   
-                Console.WriteLine(someValue);
+            //get all the keys
+            var keys = redis.HashKeys(hashKey);
 
-                //append command
-                redis.StringAppend("zeroValueKey", 1);
-                someValue = (int)redis.StringGet("zeroValueKey"); //"Our zeroValueKey number is now -991   
-                Console.WriteLine(someValue);
+            foreach (var k in keys)
+            {
+                Console.WriteLine(k); //result = title, year, author
+            }
 
-                redis.StringSet("floatValue", 1.1);
-                var floatValue = (float)redis.StringIncrement("floatValue", 0.1); //fload value is now 1.2   
-                Console.WriteLine(floatValue);
+            var len = redis.HashLength(hashKey);  //result of len is 3
+
+            if (redis.HashExists(hashKey, "year"))
+            {
+                var year = redis.HashIncrement(hashKey, "year", 1); //year now becomes 2017
+                var year2 = redis.HashDecrement(hashKey, "year", 1.5); //year now becomes 2015.5
             }
         }
     }
